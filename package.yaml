@@ -1,0 +1,46 @@
+name:                seminar-hermit
+version:             0.1.0.0
+github:              "faustind/seminar-hermit"
+license:             Unlicense
+author:              "Faustin Date"
+maintainer:          "datefaustin@gmail.com"
+copyright:           "Feel free to use and download"
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+# Metadata used when publishing your package
+synopsis:            A reading report of the paper Reasoning with the HEMIT by Farmer et al, Haskell'15 
+category:            Haskell, HERMIT, Equational Reasoning
+
+description:         Please see the README on GitHub at <https://github.com/faustind/seminar-hermit#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+- hermit
+
+library:
+  source-dirs: src
+
+executables:
+  seminar-hermit-exe:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - seminar-hermit
+
+tests:
+  seminar-hermit-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - seminar-hermit
