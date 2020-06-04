@@ -1,17 +1,24 @@
-# Reasoning with the HERMIT: Tool Support for Equational Reasoning On GHC Core Programs
+# Paper Reading Report
 
-## Farmer et al, Haskell'15
+## Faustin Date, Gunma University, Software Science Laboratory
 
-This is a report on my reading of the paper mentioned in the title.
+
+This repository is a report of my reading the paper
+
+> A. Farmer, N. Sculthorpe, and A. Gill, “Reasoning with the HERMIT: Tool support 
+> for equational reasoning on GHC Core programs,” in Proceedings of the 8th ACM 
+> SIGPLAN Symposium on Haskell, Haskell 2015, (New York, NY, USA), pp. 23–34, ACM, 2015.
+
+## Equational Reasoning
 
 Let's set the stage with some examples from [1]. We are all familiar with the 
 algebraic laws
 
 ```text
-xy = yx {commutativity}
+xy          = yx          {commutativity}
 x + (y + z) = (x + y) + z {associativity}
-x (y + z) = xy + xz {left distributivity}
-(x + y) z = xz + yz {right distributivity}
+x (y + z)   = xy + xz     {left distributivity}
+(x + y) z   = xz + yz     {right distributivity}
 ```
 
 We can use them to prove the equality `(x + a) (x + b) = x^2 + (a + b)x + ab` in the
@@ -33,9 +40,11 @@ From a computational perspective the expression (1) is less efficient than (2).
 This shows how equational resoning may be used to improve the efficiency of 
 some computation.
 
+## Reasoning about Haskell Programs
+
 Because Haskell programs are similar to mathematical functions, it is possible
 apply this form of equational resoning to Haskell programs. Hakell's function definitions can then be
-viewed as _laws_ or _properties_ saying that the left-hand side may be replaced by
+viewed as __laws__ or __properties__ saying that the left-hand side may be replaced by
 the right-hand side. For example, from the definition
 
 ```haskell
@@ -48,7 +57,7 @@ containing the definition. As another example, let's see how we can use the defi
 
 ```haskell
 reverse :: [a] -> [a]
-reverse [] = []
+reverse []     = []
 reverse (x:xs) = reverse xs ++ [x]
 ```
 
@@ -85,7 +94,7 @@ Both side of the equality can be modified to obtain the equivalent goal
 map f (map g xs) = map (λ x -> f (g x)) xs
 ```
 
-With the argument made explicit we can use induction on its structure. 
+With the argument made explicit, we can use induction on its structure. 
 For the base case, by definition of `map`
 
 ```text
@@ -123,14 +132,17 @@ And this conclude the proof that
 forall f g. map f . map g = map (f . g)
 ```
 
+## The main Idea
+
 Now, imagine that we have a program relying on the equivalence we have just proved ; and some 
 months later we update our definition of `map`. Since the proof of the equivalence rely on
-the definiion of `map`, we would need to redo it to make sure that we are not lying to say the compiler. For such small examples, it is easily done. However, consider what the task could
+the definiion of `map`, we would need to redo it to make sure that we are not lying to say the compiler.
+For such small examples, it is easily done. However, consider what the task could
 look like for the proofs that all type class laws holds for all the instances defined in a
 real world project.
 
-The main idea in the paper is that we should automate the proofs once we know the steps involved.
-The suggested approach is to 
+**I think the main idea in the paper is that we should automate the proofs once we know the steps involved.**
+The suggested approach is to
 
 1. Prove the properties using the HERMIT repl
 2. Export the commands sequence in HERMIT scripts
@@ -156,23 +168,25 @@ The paper presents several contributions, notably:
 > properties of the program being transformed, or to use inductive techniques to verify their
 > correctness.
 
-Let's use HERMIT to interactively check our proof that
+As a case study the authors present the use of HERMIT's shell to proove
+the proposition
 
 ```text
 forall f g. map f . map g = map (f . g)
 ```
 
-Assuming you have stack installed, clone this repository, move to the created directory and
-run 
+If you want to try for yourself, assuming you have stack installed, clone this repository,
+move to the created directory and run 
 
 ```bash
 $ stack build
 $ stack exec hermit src/Examples.hs
 ```
 
-The expected output is 
+The first command may take at least the time necessary to prepare a cup of tea.
+For the second command the expected output is
 
-```haskell
+```text
 [starting HERMIT v1.0.0.0 on src/Examples.hs]
 % ghc src/Examples.hs -fforce-recomp -O2 -dcore-lint ...
 [1 of 1] Compiling Examples         ( src/Examples.hs, src/Examples.o ) 
@@ -192,10 +206,11 @@ module Example where
 hermit<0>
 ```
 
-The last line is an invitation to enter HERMIT commands. The following 
-will lead to the verification of the proof.
+The last line is an invitation to enter HERMIT commands. 
+Entering the uncommented lines to the prompt will lead to the verification of the proof.
+This the example of interactive proof checking from the paper.
 
-```haskell
+```text
 set-pp-type Omit
 
 -- module main:MapFusion where map :: forall a b . (a -> b) -> [a] -> [b]
@@ -297,8 +312,10 @@ end-case -- proven map-fusion
 
 ```
 
-The authors aren't totally satisfied with their work. For example on the 
-introduce structural induction principle they say
+As any good researcher, the authors show the possible improvement on their 
+current implentation and present some possible considerations for 
+furture work. For example on the  introduced structural induction principle
+they say
 
 > This form of structural induction is somewhat limited in that it only allows
 > the induction hypothesis to be applied to a variable one constructor deep. We 
@@ -319,6 +336,66 @@ Finally
 > between HERMIT’s primitive transformations and a semantic model, so that 
 > they can be formally verified.
 
+There is a useful technique in equational reasoning that _is not supported_ 
+by HERMIT at the time of the publication. To illustrate, consider this other example
+also from [1]: the computation of an efficient version of `reverse`. To avoid the 
+quadradic time induced by the use of `++` in the previous definition Graham Hutton
+specify a new function `reverse'` such that
+
+```haskell
+reverse' xs ys = reverse xs ++ ys
+```
+
+And insted of giving a defintion of `reverse'` and proving that it satisfies the 
+specification above, he _derives the definition from the specification_ by induction
+on `xs`.
+
+Base case:
+
+```text
+ reverse' [] ys
+=   {specification of reverse'}
+ reverse [] ++ ys
+=   {apply revere}
+ [] ++ ys
+=   {apply ++}
+ ys
+```
+
+Inductive case:
+
+```text
+ reverse' (x:xs) ys
+=   {specification of reverse'}
+ reverse (x:xs) ++ ys
+=   {apply reverse}
+ (reverse xs ++ [x]) ++ ys
+=   {associativity of ++}
+ reverse xs ++ ([x] ++ ys)
+=   {induction hypothesis}
+ reverse' xs ([x] ++ ys)
+=   {apply ++}
+ reverse' xs (x : ys)
+```
+
+The conclusion is
+
+```haskell
+reverse' :: [a] -> [a] -> [a]
+reverse' [] ys     = ys
+reverse' (x:xs) ys = reverse' xs (x : ys)
+```
+
+Finally a nicer version of `reverse` is defined
+
+```haskell
+reverse :: [a] -> [a]
+reverse xs = reverse' xs []
+```
+
+The derivations of programs in such a backward manner although not supported can
+still be verified by using the resulting definition as a goal in a verification
+of the specification.
 
 ## References
 
